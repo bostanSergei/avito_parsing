@@ -2,6 +2,8 @@ from playwright.async_api import Page
 
 import random
 
+from parsing_html import find_query_numbers, check_string
+
 
 class BasePage:
     def __init__(self, page: Page):
@@ -67,3 +69,61 @@ class BasePage:
         await self.page.wait_for_timeout(random.randint(1000, 3000))
 
         return True
+
+    async def find_and_fill(
+            self, placeholder: str = '', locator: str = '', filler: str = '', by_placeholder: bool = True
+    ):
+        """
+        """
+        if by_placeholder:
+            all_elements = await self.page.get_by_placeholder(placeholder).all()
+        else:
+            all_elements = await self.page.locator(locator, has_text=placeholder).all()
+
+        if len(all_elements) > 0:
+            for element in all_elements:
+                if await element.is_visible():
+                    await element.fill(filler)
+                    break
+
+        await self.page.wait_for_timeout(random.randint(1500, 5000))
+
+    async def find_and_click(
+            self, placeholder: str = '', locator: str = '', filler: str = '', by_placeholder: bool = True
+    ):
+        """
+        """
+        if by_placeholder:
+            all_elements = await self.page.get_by_placeholder(placeholder).all()
+        else:
+            all_elements = await self.page.locator(locator, has_text=placeholder).all()
+
+        if len(all_elements) > 0:
+            for element in all_elements:
+                if await element.is_visible():
+                    await element.click()
+                    break
+
+        await self.page.wait_for_timeout(random.randint(1500, 5000))
+
+    async def parsing_table(self, table) -> dict:
+        result_table: dict = {}
+        for number, city in table['cities'].items():
+            await self.page.get_by_placeholder('Населённый пункт').fill(city)
+
+            await self.page.wait_for_timeout(random.randint(1500, 5000))
+
+            all_city_button = await self.page.locator('div > button > div').all()
+
+            for tag in all_city_button:
+                if await tag.is_visible():
+                    if check_string(await tag.text_content(), city):
+                        await tag.click()
+                        break
+
+            await self.page.wait_for_timeout(random.randint(1500, 5000))
+
+            lst_with_number = find_query_numbers(await self.page.content())
+            result_table[number] = lst_with_number
+
+        return result_table

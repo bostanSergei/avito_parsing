@@ -4,11 +4,16 @@ from datetime import date
 import os
 
 
-def get_path() -> str:
-    if os.name == 'posix':
-        path_to_file = 'start_table/'
+def get_path(flag: bool = True) -> str:
+    if flag:
+        folder = 'start_table'
     else:
-        path_to_file = 'start_table\\'
+        folder = 'table_after_parsing'
+
+    if os.name == 'posix':
+        path_to_file = f'{folder}/'
+    else:
+        path_to_file = f'{folder}\\'
 
     return path_to_file
 
@@ -40,7 +45,7 @@ def get_start_data_from_excel_table(name: str = 'sample.xlsx') -> dict:
         if cur_value is None:
             break
         else:
-            final_string = cur_value.replace('ё', 'е')
+            final_string = cur_value.replace('ё', 'е').strip()
             if final_string not in uniq_cities:
                 uniq_cities.add(final_string)
                 column_values[f'{row}'] = final_string
@@ -51,7 +56,7 @@ def get_start_data_from_excel_table(name: str = 'sample.xlsx') -> dict:
     return result_data
 
 
-def save_excel_table(final_data: dict) -> None:
+def save_excel_table(final_data: dict) -> str:
     workbook = openpyxl.load_workbook(filename=f'{get_path()}sample.xlsx')
     sheet = workbook.active
 
@@ -62,5 +67,57 @@ def save_excel_table(final_data: dict) -> None:
 
     curr_date = date.today().strftime('%d_%m_%Y')
 
-    workbook.save(filename=f'parsing_{curr_date}.xlsx')
+    workbook.save(filename=f'{get_path(False)}parsing_{curr_date}.xlsx')
     workbook.close()
+    return curr_date
+
+
+def save_analytic_part(final_data: dict, search_query: list, curr_date: str) -> None:
+    workbook = openpyxl.load_workbook(filename=f'{get_path(False)}parsing_{curr_date}.xlsx')
+    sheet = workbook.active
+
+    for row, lst in final_data.items():
+        if len(lst) == len(search_query):
+            string = ''
+            for i in range(len(search_query)):
+                string += f'{search_query[i] - str(lst[i])}\n'
+
+            sheet[f'B{row}'] = string
+
+    workbook.save(filename=f'{get_path(False)}parsing_{curr_date}.xlsx')
+    workbook.close()
+
+
+def get_analytic_data(curr_date: str = '28_04_2024') -> dict:
+    path_to_file = f'{get_path(flag=False)}parsing_{curr_date}.xlsx'
+
+    result_data: dict = {
+        'search_query': None,       # предполагается список со строками для поискового запроса
+        'category': None,           # предполагается строка с категорией для поиска
+        'cities': None              # предполагается словарь, где ключ - это номер ячейки, в которой находится город,
+                                    # а значение - сам город (этот финт нужен для последующей записи полученных данных)
+                                    # к тому же в словаре будут отсутствовать города, не найденные на предыдущем шаге
+    }
+
+    workbook = openpyxl.load_workbook(f'{path_to_file}')
+    sheet = workbook.active
+
+    result_data['search_query'] = [value.strip().lower() for value in sheet['B4'].value.split('\n')]
+    result_data['category'] = sheet['B5'].value.strip().lower()
+
+    start_column, start_row = 'A', 8
+    column_values: dict = {}
+
+    for row in range(start_row, sheet.max_row + 1):
+        cur_value = sheet[f'{start_column}{row}'].value
+        if cur_value is None:
+            break
+        else:
+            final_string = cur_value.replace('ё', 'е')
+            if (curr_data := sheet[f'C{row}'].value) is not None and str(curr_data).isdigit():
+                column_values[f'{row}'] = final_string
+
+    result_data['cities'] = column_values
+    workbook.close()
+
+    return result_data
