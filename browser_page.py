@@ -12,6 +12,7 @@ class BasePage:
 
     async def go_to_last_category(self, categories: list):
         logger.info('Начинаем переход по категориям')
+        modal_flag = True
         for index_category in range(len(categories)):
             locators = []
             if index_category < 3:
@@ -19,8 +20,30 @@ class BasePage:
                 locators.extend(await self.page.locator('div > p', has_text=categories[index_category]).all())
                 locators.extend(await self.page.locator('div > a > strong', has_text=categories[index_category]).all())
             else:
+                if modal_flag:
+                    modal = await self.page.locator('div > div > button > div > article > p', has_text='Все категории').all()
+                    if len(modal) > 0:
+                        for el in modal:
+                            if await el.is_visible():
+                                logger.info('Открываем модальное окно с категориями')
+                                await el.click()
+                                modal_flag = False
+                                await self.page.wait_for_timeout(random.randint(3000, 10_000))
+                                break
+
+                    # while len(elements := await self.page.locator('div > p > a', has_text='Ещё').all()) > 0:
+                    #     count = 0
+                    #     for el in elements:
+                    #         if await el.is_visible():
+                    #             await el.click()
+                    #             await self.page.wait_for_timeout(random.randint(1000, 5000))
+                    #             count += 1
+                    #             break
+                    #     if count == 0:
+                    #         break
+
                 locators.extend(
-                    await self.page.locator('div > a > div > article > p', has_text=categories[index_category]).all())
+                    await self.page.locator('div > h5 > a', has_text=categories[index_category]).all())
                 locators.extend(await self.page.locator('div > div > a', has_text=categories[index_category]).all())
 
             if len(locators) > 0:
