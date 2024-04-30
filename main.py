@@ -176,8 +176,9 @@ async def main():
     await auth_page.close()
     await browser.close()
 
+    await playwright.stop()
+
     logger.info('Страница закрыта. Браузер закрыт. Парсер закончил свою работу!')
-    print('Парсер закончил свою работу!')
 
 
 if __name__ == '__main__':

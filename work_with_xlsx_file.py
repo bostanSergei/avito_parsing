@@ -1,7 +1,7 @@
 import openpyxl
 from loguru import logger
 
-from datetime import date
+from datetime import date, datetime
 import os
 
 
@@ -96,13 +96,14 @@ def save_analytic_part(final_data: dict, search_query: list, curr_date: str) -> 
 
             sheet[f'B{row}'] = string.strip()
 
+    curr_date = datetime.now().strftime('%d_%m_%Y_%H_%M')
     workbook.save(filename=f'{get_path(False)}parsing_{curr_date}.xlsx')
     workbook.close()
 
     logger.info(f'Таблица сохранена и закрыта с именем: parsing_{curr_date}.xlsx')
 
 
-def get_analytic_data(curr_date: str = '28_04_2024') -> dict:
+def get_analytic_data(curr_date: str) -> dict:
     logger.info('Открываем таблицу для получения данных на этап аналитики')
     path_to_file = f'{get_path(flag=False)}parsing_{curr_date}.xlsx'
 
