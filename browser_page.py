@@ -1,4 +1,5 @@
 from playwright.async_api import Page
+from loguru import logger
 
 import random
 
@@ -10,6 +11,7 @@ class BasePage:
         self.page = page
 
     async def go_to_last_category(self, categories: list):
+        logger.info('Начинаем переход по категориям')
         for index_category in range(len(categories)):
             locators = []
             if index_category < 3:
@@ -25,8 +27,9 @@ class BasePage:
                 for el in locators:
                     if await el.is_visible():
                         await el.click()
-                        await self.page.wait_for_timeout(random.randint(1000, 5000))
+                        await self.page.wait_for_timeout(random.randint(1500, 5000))
                         break
+        logger.info('Поиск по категориях закончен')
 
     async def fill_search_query(self, filler: str):
         """
@@ -41,32 +44,40 @@ class BasePage:
                     second_step.append(el)
 
         if len(second_step) > 0:
+            logger.info(f'Заполнить поле ввода запросом: {filler}')
             await second_step[0].fill(filler)
             await self.page.keyboard.press('Enter')
 
     async def open_modal_with_cities(self):
+        logger.info('Открываем модальное окно для выбора города')
+        await self.page.wait_for_timeout(random.randint(2000, 5000))
         elements = await self.page.locator('span > span > span > span > span', has_text='радиус').all()
         if len(elements) > 0:
             for el in elements:
                 if await el.is_visible():
                     await el.click()
                     break
+        await self.page.wait_for_timeout(random.randint(2000, 5000))
 
     async def get_all_cities_and_press_button(self, sample: set) -> bool:
         cities = await self.page.locator('div > button > div > span').all()
 
+        logger.info('Начинаем поиск требуемого города в списке городов')
         for city in cities:
             cur_text = await city.text_content()
             cur_list = {el.lower().strip() for el in cur_text.split(',')}
             if len(sample.intersection(cur_list)) >= len(sample):
                 await city.click()
+                logger.info('Город найден - выбираем его')
                 break
         else:
+            logger.warning('Город НЕ был найден - он будет исключен из дальнейшего поиска!')
             return False
 
-        await self.page.wait_for_timeout(random.randint(1000, 3000))
+        await self.page.wait_for_timeout(random.randint(2000, 4000))
         await self.page.locator('button > span > span', has_text='Показать').click()
-        await self.page.wait_for_timeout(random.randint(1000, 3000))
+        logger.info('Клик по кнопке Показать для перехода к объявлениям')
+        await self.page.wait_for_timeout(random.randint(2000, 4000))
 
         return True
 
@@ -84,6 +95,7 @@ class BasePage:
             for element in all_elements:
                 if await element.is_visible():
                     await element.fill(filler)
+                    logger.info(f'Поле заполнено значением: {filler}')
                     break
 
         await self.page.wait_for_timeout(random.randint(1500, 5000))
@@ -108,7 +120,9 @@ class BasePage:
 
     async def parsing_table(self, table) -> dict:
         result_table: dict = {}
+        logger.info(f'Начинаем поиск по городам. Всего городов: {len(table["cities"])}')
         for number, city in table['cities'].items():
+            logger.info(f'Текущий город: {city}')
             await self.page.get_by_placeholder('Населённый пункт').fill(city)
 
             await self.page.wait_for_timeout(random.randint(1500, 5000))
@@ -118,6 +132,7 @@ class BasePage:
             for tag in all_city_button:
                 if await tag.is_visible():
                     if check_string(await tag.text_content(), city):
+                        logger.info('Город найден - осуществляем переход')
                         await tag.click()
                         break
 
@@ -125,5 +140,6 @@ class BasePage:
 
             lst_with_number = find_query_numbers(await self.page.content())
             result_table[number] = lst_with_number
+            logger.info(f'По городу {city} получен список {lst_with_number}')
 
         return result_table

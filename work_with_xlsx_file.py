@@ -1,4 +1,5 @@
 import openpyxl
+from loguru import logger
 
 from datetime import date
 import os
@@ -30,8 +31,14 @@ def get_start_data_from_excel_table(name: str = 'sample.xlsx') -> dict:
                                     # а значение - сам город (этот финт нужен для последующей записи полученных данных)
     }
 
+    if f'{name}' not in os.listdir(f'start_table/' if os.name == 'posix' else f'start_table\\'):
+        logger.error('ТАБЛИЦА НЕ НАЙДЕНА')
+        raise FileNotFoundError
+
     workbook = openpyxl.load_workbook(f'{get_path()}{name}')
     sheet = workbook.active
+
+    logger.info(f'Открыта стартовая таблица с именем {name}')
 
     result_data['search_query'] = sheet['B3'].value.strip()
     result_data['categories'] = [value.strip() for value in sheet['B2'].value.split('\n')]
@@ -53,10 +60,12 @@ def get_start_data_from_excel_table(name: str = 'sample.xlsx') -> dict:
     result_data['cities'] = column_values
     workbook.close()
 
+    logger.info('Данные извлечены из таблицы и переданы на следующий уровень')
     return result_data
 
 
 def save_excel_table(final_data: dict) -> str:
+    logger.info('Открываем таблицу для сохранения данных по результатам поисковых запросов')
     workbook = openpyxl.load_workbook(filename=f'{get_path()}sample.xlsx')
     sheet = workbook.active
 
@@ -69,10 +78,13 @@ def save_excel_table(final_data: dict) -> str:
 
     workbook.save(filename=f'{get_path(False)}parsing_{curr_date}.xlsx')
     workbook.close()
+
+    logger.info(f'Таблица сохранена и закрыта с именем: parsing_{curr_date}.xlsx')
     return curr_date
 
 
 def save_analytic_part(final_data: dict, search_query: list, curr_date: str) -> None:
+    logger.info('Открываем таблицу для сохранения данных по результатам аналитики')
     workbook = openpyxl.load_workbook(filename=f'{get_path(False)}parsing_{curr_date}.xlsx')
     sheet = workbook.active
 
@@ -80,15 +92,18 @@ def save_analytic_part(final_data: dict, search_query: list, curr_date: str) -> 
         if len(lst) == len(search_query):
             string = ''
             for i in range(len(search_query)):
-                string += f'{search_query[i] - str(lst[i])}\n'
+                string += f'{search_query[i]} - {str(lst[i])}\n'
 
-            sheet[f'B{row}'] = string
+            sheet[f'B{row}'] = string.strip()
 
     workbook.save(filename=f'{get_path(False)}parsing_{curr_date}.xlsx')
     workbook.close()
 
+    logger.info(f'Таблица сохранена и закрыта с именем: parsing_{curr_date}.xlsx')
+
 
 def get_analytic_data(curr_date: str = '28_04_2024') -> dict:
+    logger.info('Открываем таблицу для получения данных на этап аналитики')
     path_to_file = f'{get_path(flag=False)}parsing_{curr_date}.xlsx'
 
     result_data: dict = {
@@ -115,9 +130,10 @@ def get_analytic_data(curr_date: str = '28_04_2024') -> dict:
         else:
             final_string = cur_value.replace('ё', 'е')
             if (curr_data := sheet[f'C{row}'].value) is not None and str(curr_data).isdigit():
-                column_values[f'{row}'] = final_string
+                column_values[f'{row}'] = final_string.strip()
 
     result_data['cities'] = column_values
     workbook.close()
 
+    logger.info('Данные сохранены - таблица закрыта!')
     return result_data
