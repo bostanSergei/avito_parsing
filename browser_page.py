@@ -74,22 +74,36 @@ class BasePage:
     async def open_modal_with_cities(self):
         logger.info('Открываем модальное окно для выбора города')
         await self.page.wait_for_timeout(random.randint(2000, 5000))
+
+        # строки для нажатия на кнопку выбора города через координаты на странице (могут съезжать из-за баннера)
+        # await self.page.keyboard.press('PageUp')
+        # await self.page.wait_for_timeout(random.randint(2500, 5000))
+        # await self.page.mouse.click(1230, 85)
+
+        # поиск элемента для открытия модального окна (стартовая версия)
         elements = await self.page.locator('span > span > span > span > span', has_text='радиус').all()
         if len(elements) > 0:
             for el in elements:
                 if await el.is_visible():
                     await el.click()
                     break
+
         await self.page.wait_for_timeout(random.randint(2000, 5000))
 
     async def get_all_cities_and_press_button(self, sample: set) -> bool:
-        cities = await self.page.locator('div > button > div > span').all()
+        cities = await self.page.locator('div > div > button > div').all()
 
         logger.info('Начинаем поиск требуемого города в списке городов')
         for city in cities:
             cur_text = await city.text_content()
             cur_list = {el.lower().strip() for el in cur_text.split(',')}
-            if len(sample.intersection(cur_list)) >= len(sample):
+
+            flag = check_string(
+                ''.join([s.lower() for s in cur_text if s.isalpha()]),
+                ''.join([s.lower() for s in ''.join(sample) if s.isalpha()])
+            )
+
+            if flag:
                 await city.click()
                 logger.info('Город найден - выбираем его')
                 break

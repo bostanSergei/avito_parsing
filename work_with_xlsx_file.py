@@ -52,7 +52,7 @@ def get_start_data_from_excel_table(name: str = 'sample.xlsx') -> dict:
         if cur_value is None:
             break
         else:
-            final_string = cur_value.replace('ё', 'е').strip()
+            final_string = cur_value
             if final_string not in uniq_cities:
                 uniq_cities.add(final_string)
                 column_values[f'{row}'] = final_string
@@ -129,7 +129,7 @@ def get_analytic_data(curr_date: str) -> dict:
         if cur_value is None:
             break
         else:
-            final_string = cur_value.replace('ё', 'е')
+            final_string = cur_value
             if (curr_data := sheet[f'C{row}'].value) is not None and str(curr_data).isdigit():
                 column_values[f'{row}'] = final_string.strip()
 

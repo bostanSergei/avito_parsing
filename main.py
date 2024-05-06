@@ -68,7 +68,6 @@ async def main():
     await auth_page.wait_for_timeout(random.randint(5500, 10000))
 
     # под вторую страницу откроем новый браузер
-    # s_playwright = await async_playwright().start()
     logger.info('Открываем второй браузер')
     s_browser = await playwright.chromium.launch(headless=False)
     s_context = await s_browser.new_context(viewport={'width': 1440, 'height': 1250})
@@ -104,25 +103,33 @@ async def main():
     for row, city in data_from_table['cities'].items():
         logger.info(f'Начинаем поиск по городу {city}')
         sample_set = {el.lower().strip() for el in city.split(', ')}
-        if flag:
-            await base_page.open_modal_with_cities()
-            await page.wait_for_timeout(random.randint(2500, 5500))
 
-        inputs_tag = await page.get_by_placeholder('Город или регион').all()
+        for i in range(3):
+            if flag:
+                await base_page.open_modal_with_cities()
+                await page.wait_for_timeout(random.randint(2500, 5500))
 
-        for tag in inputs_tag:
-            if await tag.is_visible():
-                logger.info(f'Заполняем поле ввода для города {city}')
-                await tag.fill(city)
+            inputs_tag = await page.get_by_placeholder('Город или регион').all()
 
-        await page.wait_for_timeout(random.randint(2500, 2500))
+            for tag in inputs_tag:
+                if await tag.is_visible():
+                    logger.info(f'Заполняем поле ввода для города {city}')
+                    await tag.fill(city)
 
-        flag = await base_page.get_all_cities_and_press_button(sample_set)
-        if flag:
-            await page.wait_for_timeout(random.randint(3500, 5500))
-            final_data[row] = parsing_data(await page.content())
-        else:
-            final_data[row] = ['Город отсутствует в поиске'] * 2
+            await page.wait_for_timeout(random.randint(2500, 2500))
+
+            flag = await base_page.get_all_cities_and_press_button(sample_set)
+
+            if flag:
+                await page.wait_for_timeout(random.randint(3500, 5500))
+                final_data[row] = parsing_data(await page.content())
+                break
+            else:
+                logger.info(f"Перезагружем страницу для повтороного поиска. Номер запроса: {i + 1}")
+                await page.reload(wait_until='domcontentloaded')
+                flag = True
+                await page.wait_for_timeout(random.randint(7500, 15000))
+                final_data[row] = ['Город отсутствует в поиске'] * 2
 
         logger.info(f'По городу {city} получены данные: {final_data[row]}')
 

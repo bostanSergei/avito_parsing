@@ -7,3 +7,6 @@ __pycache__/
 
 *.ipynb
 *.json
+*.log
+
+parsing*.xlsx

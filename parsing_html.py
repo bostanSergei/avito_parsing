@@ -87,4 +87,22 @@ def find_query_numbers(html_file: str) -> list:
         except ValueError:
             print('В процессе перевода количества объявлений в целое число произошла ошибка')
 
+    if len(analytic_list) == 0:
+        num = ''
+        all_data = soup.find_all('h3')
+        if len(all_data) > 0:
+            num = ''
+            for tag in all_data:
+                curr_text = tag.text
+                if 'Всего запросов:'.lower() in curr_text.lower().strip():
+                    for symb in curr_text:
+                        if symb.isdigit():
+                            num += symb
+                    break
+        if len(num) > 0:
+            try:
+                analytic_list.append(int(num))
+            except:
+                pass
+
     return analytic_list
