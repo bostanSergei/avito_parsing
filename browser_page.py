@@ -112,7 +112,16 @@ class BasePage:
             return False
 
         await self.page.wait_for_timeout(random.randint(2000, 4000))
-        await self.page.locator('button > span > span', has_text='Показать').click()
+
+        show_button = await self.page.locator('button > span > span', has_text='Показать').all()
+        if len(show_button) == 0:
+            return False
+        else:
+            for el in show_button:
+                if await el.is_visible():
+                    await el.click()
+                    break
+
         logger.info('Клик по кнопке Показать для перехода к объявлениям')
         await self.page.wait_for_timeout(random.randint(2000, 4000))
 

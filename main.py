@@ -41,7 +41,9 @@ async def main():
     if new_context:
         context = await browser.new_context(viewport={'width': 1440, 'height': 1250})
     else:
-        context = await browser.new_context(viewport={'width': 1440, 'height': 1250}, storage_state=f'{path_to_state_folder}state_{start_date}.json')
+        context = await browser.new_context(
+            viewport={'width': 1440, 'height': 1250}, storage_state=f'{path_to_state_folder}state_{start_date}.json'
+        )
 
     # страница с авторизацией
     auth_page = await context.new_page()
@@ -53,7 +55,9 @@ async def main():
 
     if new_context:
         logger.info('Переходим к авторизации и ожидаем окно с капчей')
-        await auth_object_page.find_and_click(placeholder='Вход и регистрация', locator='div > div > a', by_placeholder=False)
+        await auth_object_page.find_and_click(
+            placeholder='Вход и регистрация', locator='div > div > a', by_placeholder=False
+        )
         await auth_object_page.find_and_fill(placeholder='Телефон или почта', filler=LOGIN)
         await auth_object_page.find_and_fill(placeholder='Пароль', filler=PASSWORD)
         await auth_object_page.find_and_click(placeholder='Войти', locator='button > span', by_placeholder=False)
@@ -174,7 +178,9 @@ async def main():
     await auth_page.wait_for_timeout(random.randint(3500, 5500))
 
     logger.info('Выполнить переключение кнопки - 30 дней')
-    await auth_object_page.find_and_click(placeholder='30 дней', locator='label > span > span > span', by_placeholder=False)
+    await auth_object_page.find_and_click(
+        placeholder='30 дней', locator='label > span > span > span', by_placeholder=False
+    )
 
     logger.info('Начинаем сбор аналитики по городам')
     analytic_dict = await auth_object_page.parsing_table(analytic_table)
