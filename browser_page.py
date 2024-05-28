@@ -113,7 +113,9 @@ class BasePage:
 
         await self.page.wait_for_timeout(random.randint(2000, 4000))
 
-        show_button = await self.page.locator('button > span > span', has_text='Показать').all()
+        show_button = await self.page.locator(
+            'div[class*=popup-buttons-] > div > button > span > span', has_text='Показать'
+        ).all()
         if len(show_button) == 0:
             return False
         else:
